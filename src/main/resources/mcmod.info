@@ -1,0 +1,16 @@
+[
+{
+  "modid": "anothermagicrecipe",
+  "name": "Another Magic Recipe",
+  "description": "Another Magic Recipe",
+  "version": "${version}",
+  "mcversion": "${mcversion}",
+  "url": "",
+  "updateUrl": "",
+  "authorList": ["Is_GK", "Junior_Mo"],
+  "credits": "Another Magic Recipe",
+  "logoFile": "",
+  "screenshots": [],
+  "dependencies": []
+}
+]
