@@ -65,19 +65,7 @@ public class ThaumCraftArcaneRecipeChangeHandler extends ARecipeHandler<ThaumCra
 	@Override
 	public void save(DataOutputStream dos) throws IOException {
 		for (Object[] objs : recipes) {
-			if (objs[0] instanceof ItemStack) {
-				dos.writeBoolean(false);
-				String tag = "";
-				for (Object itemStack : objs) {
-					tag = itemStack == null ? tag + "0" : tag + "1";
-				}
-				dos.writeUTF(tag);
-				for (Object itemStack : objs) {
-					if (itemStack != null) {
-						ItemStackUtil.saveItemStack((ItemStack) itemStack, dos);
-					}
-				}
-			} else {
+			if (objs[0] instanceof Boolean) {
 				dos.writeBoolean(true);
 				dos.writeBoolean((Boolean) objs[0]);
 				ItemStackUtil.saveItemStack((ItemStack) objs[1], dos);
@@ -93,6 +81,18 @@ public class ThaumCraftArcaneRecipeChangeHandler extends ARecipeHandler<ThaumCra
 				for (int i = 9; i < objs.length; i++) {
 					if (objs[i] != null) {
 						ItemStackUtil.saveItemStack((ItemStack) objs[i], dos);
+					}
+				}
+			} else {
+				dos.writeBoolean(false);
+				String tag = "";
+				for (Object itemStack : objs) {
+					tag = itemStack == null ? tag + "0" : tag + "1";
+				}
+				dos.writeUTF(tag);
+				for (Object itemStack : objs) {
+					if (itemStack != null) {
+						ItemStackUtil.saveItemStack((ItemStack) itemStack, dos);
 					}
 				}
 			}
