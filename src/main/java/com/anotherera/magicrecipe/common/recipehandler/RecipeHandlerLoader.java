@@ -30,7 +30,7 @@ public class RecipeHandlerLoader {
 
 	private static List<ARecipeHandler> rhs = new ArrayList<>();
 
-	public static void preInit() {
+	public static void postInit() {
 		NetworkRegister.regist(new RecipeChangeHandler(), RecipeChangePacket.class, Side.CLIENT);
 		register("MinecraftRecipe", new MinecraftRecipeChangeHandler(), MinecraftRecipeChangePacket.class);
 		if (Loader.isModLoaded("Thaumcraft")) {
