@@ -12,6 +12,7 @@ import com.anotherera.magicrecipe.client.gui.GuiArcaneWorkbench;
 import com.anotherera.magicrecipe.common.api.ARecipeHandler;
 import com.anotherera.magicrecipe.common.entity.FakePlayerLoader;
 import com.anotherera.magicrecipe.common.inventory.ContainerArcaneWorkbench;
+import com.anotherera.magicrecipe.common.item.OreDictItem;
 import com.anotherera.magicrecipe.common.network.packet.ThaumCraftArcaneRecipeChangePacket;
 import com.anotherera.magicrecipe.common.util.ItemStackUtil;
 
@@ -25,6 +26,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.inventory.Container;
 import net.minecraft.item.ItemStack;
+import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.World;
 import thaumcraft.api.ThaumcraftApi;
@@ -226,7 +228,6 @@ public class ThaumCraftArcaneRecipeChangeHandler extends ARecipeHandler<ThaumCra
 				}
 			}
 			if (haveItem && aspects.size() != 0) {
-				IArcaneRecipe exRecipe;
 				if (isShaped) {
 					int up = 3, down = -1, left = 3, right = -1, count = 0;
 					for (int i = 0; i < 3; i++) {
@@ -269,39 +270,59 @@ public class ThaumCraftArcaneRecipeChangeHandler extends ARecipeHandler<ThaumCra
 					}
 					for (int i = 0, j = 0; i < in.length; i++) {
 						if (in[i] != null) {
+							boolean isOreDict = false;
 							objs[strtags.length + j * 2] = (char) ('0' + i);
-							objs[strtags.length + j * 2 + 1] = in[i];
+							if (in[i].getItem() instanceof OreDictItem) {
+								if (in[i].hasTagCompound()) {
+									NBTTagCompound nbt = in[i].getTagCompound();
+									if (nbt.hasKey("oreName")) {
+										objs[strtags.length + j * 2 + 1] = nbt.getString("oreName");
+										isOreDict = true;
+									}
+								}
+							}
+							if (!isOreDict) {
+								objs[strtags.length + j * 2 + 1] = in[i];
+							}
 							j++;
 						}
 					}
-					exRecipe = ThaumcraftApi.addArcaneCraftingRecipe(research, output, aspects, objs);
+					ThaumcraftApi.addArcaneCraftingRecipe(research, output, aspects, objs);
 				} else {
-					ArrayList<ItemStack> in = new ArrayList<>();
+					ArrayList<Object> in = new ArrayList<>();
 					for (ItemStack itemStack : inputs) {
 						if (itemStack != null) {
-							in.add(itemStack);
+							boolean isOreDict = false;
+							if (itemStack.getItem() instanceof OreDictItem) {
+								if (itemStack.hasTagCompound()) {
+									NBTTagCompound nbt = itemStack.getTagCompound();
+									if (nbt.hasKey("oreName")) {
+										in.add(nbt.getString("oreName"));
+										isOreDict = true;
+									}
+								}
+							}
+							if (!isOreDict) {
+								in.add(itemStack);
+							}
 						}
 					}
-					exRecipe = ThaumcraftApi.addShapelessArcaneCraftingRecipe(research, output, aspects,
-							(Object[]) inputs);
+					ThaumcraftApi.addShapelessArcaneCraftingRecipe(research, output, aspects, in.toArray());
 				}
-				boolean isRaw = false;
-				if (!isRaw) {
-					Object[] data = new Object[9 + inputs.length];
-					data[0] = Boolean.valueOf(isShaped);
-					data[1] = output;
-					data[2] = aspects.getAmount(Aspect.AIR);
-					data[3] = aspects.getAmount(Aspect.FIRE);
-					data[4] = aspects.getAmount(Aspect.WATER);
-					data[5] = aspects.getAmount(Aspect.EARTH);
-					data[6] = aspects.getAmount(Aspect.ORDER);
-					data[7] = aspects.getAmount(Aspect.ENTROPY);
-					data[8] = research;
-					for (int i = 0; i < inputs.length; i++) {
-						data[i + 9] = inputs[i];
-					}
-					recipes.add(data);
+				Object[] data = new Object[9 + inputs.length];
+				data[0] = Boolean.valueOf(isShaped);
+				data[1] = output;
+				data[2] = aspects.getAmount(Aspect.AIR);
+				data[3] = aspects.getAmount(Aspect.FIRE);
+				data[4] = aspects.getAmount(Aspect.WATER);
+				data[5] = aspects.getAmount(Aspect.EARTH);
+				data[6] = aspects.getAmount(Aspect.ORDER);
+				data[7] = aspects.getAmount(Aspect.ENTROPY);
+				data[8] = research;
+				for (int i = 0; i < inputs.length; i++) {
+					data[i + 9] = inputs[i];
 				}
+				recipes.add(data);
 			}
 		}
 	}

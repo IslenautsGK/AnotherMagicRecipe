@@ -12,6 +12,7 @@ import com.anotherera.magicrecipe.client.gui.GuiExtremeCrafting;
 import com.anotherera.magicrecipe.common.api.ARecipeHandler;
 import com.anotherera.magicrecipe.common.inventory.ContainerExtremeCrafting;
 import com.anotherera.magicrecipe.common.inventory.InventoryCrafting;
+import com.anotherera.magicrecipe.common.item.OreDictItem;
 import com.anotherera.magicrecipe.common.network.packet.AvaritiaRecipeChangePacket;
 import com.anotherera.magicrecipe.common.util.ItemStackUtil;
 
@@ -19,13 +20,12 @@ import cpw.mods.fml.common.Optional;
 import cpw.mods.fml.common.network.simpleimpl.IMessage;
 import cpw.mods.fml.common.network.simpleimpl.MessageContext;
 import fox.spiteful.avaritia.crafting.ExtremeCraftingManager;
-import fox.spiteful.avaritia.crafting.ExtremeShapedRecipe;
-import fox.spiteful.avaritia.crafting.ExtremeShapelessRecipe;
 import fox.spiteful.avaritia.tile.TileEntityDireCrafting;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.inventory.Container;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.crafting.IRecipe;
+import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.World;
 
@@ -34,6 +34,7 @@ public class AvaritiaRecipeChangeHandler extends ARecipeHandler<AvaritiaRecipeCh
 
 	public static List<Object[]> recipes = new ArrayList<>();
 	private static List raw = new ArrayList();
+	private static final String craftingTag = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ~!@#$%^&*()-+<>?;:'";
 
 	@Override
 	public void init() {
@@ -146,12 +147,12 @@ public class AvaritiaRecipeChangeHandler extends ARecipeHandler<AvaritiaRecipeCh
 				}
 			}
 			if (haveItem) {
-				IRecipe exRecipe;
 				if (isShaped) {
-					int up = 9, down = -1, left = 9, right = -1;
+					int up = 9, down = -1, left = 9, right = -1, count = 0;
 					for (int i = 0; i < 9; i++) {
 						for (int j = 0; j < 9; j++) {
 							if (inputs[i * 9 + j] != null) {
+								count++;
 								if (up > i) {
 									up = i;
 								}
@@ -169,21 +170,68 @@ public class AvaritiaRecipeChangeHandler extends ARecipeHandler<AvaritiaRecipeCh
 					}
 					int w = right - left + 1;
 					int h = down - up + 1;
+
+					String[] strtags = new String[h];
+					for (int i = 0; i < h; i++) {
+						strtags[i] = "";
+						for (int j = 0; j < w; j++) {
+							strtags[i] += craftingTag.charAt(i * w + j);
+						}
+					}
 					ItemStack[] in = new ItemStack[w * h];
 					for (int i = 0; i < h; i++) {
 						for (int j = 0; j < w; j++) {
 							in[i * w + j] = inputs[(i + up) * 9 + (j + left)];
 						}
 					}
-					exRecipe = new ExtremeShapedRecipe(w, h, in, output);
-				} else {
-					ArrayList<ItemStack> in = new ArrayList<>();
-					for (ItemStack itemStack : inputs) {
-						if (itemStack != null) {
-							in.add(itemStack);
+					Object[] objs = new Object[strtags.length + count * 2];
+					for (int i = 0; i < strtags.length; i++) {
+						objs[i] = strtags[i];
+					}
+					for (int i = 0, j = 0; i < in.length; i++) {
+						if (in[i] != null) {
+							boolean isOreDict = false;
+							objs[strtags.length + j * 2] = (char) (craftingTag.charAt(i));
+							if (in[i].getItem() instanceof OreDictItem) {
+								if (in[i].hasTagCompound()) {
+									NBTTagCompound nbt = in[i].getTagCompound();
+									if (nbt.hasKey("oreName")) {
+										objs[strtags.length + j * 2 + 1] = nbt.getString("oreName");
+										isOreDict = true;
+									}
+								}
+							}
+							if (!isOreDict) {
+								objs[strtags.length + j * 2 + 1] = in[i];
+							}
+							j++;
 						}
 					}
-					exRecipe = new ExtremeShapelessRecipe(output, in);
+					ExtremeCraftingManager.getInstance().addExtremeShapedOreRecipe(output, objs);
+					/*
+					 * ItemStack[] in = new ItemStack[w * h]; for (int i = 0; i < h; i++) { for (int
+					 * j = 0; j < w; j++) { in[i * w + j] = inputs[(i + up) * 9 + (j + left)]; } }
+					 */
+				} else {
+					ArrayList<Object> in = new ArrayList<>();
+					for (ItemStack itemStack : inputs) {
+						if (itemStack != null) {
+							boolean isOreDict = false;
+							if (itemStack.getItem() instanceof OreDictItem) {
+								if (itemStack.hasTagCompound()) {
+									NBTTagCompound nbt = itemStack.getTagCompound();
+									if (nbt.hasKey("oreName")) {
+										in.add(nbt.getString("oreName"));
+										isOreDict = true;
+									}
+								}
+							}
+							if (!isOreDict) {
+								in.add(itemStack);
+							}
+						}
+					}
+					ExtremeCraftingManager.getInstance().addShapelessOreRecipe(output, in.toArray());
 				}
 				Object[] data = new Object[2 + inputs.length];
 				data[0] = Boolean.valueOf(isShaped);
@@ -192,7 +240,6 @@ public class AvaritiaRecipeChangeHandler extends ARecipeHandler<AvaritiaRecipeCh
 					data[i + 2] = inputs[i];
 				}
 				recipes.add(data);
-				ExtremeCraftingManager.getInstance().getRecipeList().add(exRecipe);
 			}
 		}
 	}

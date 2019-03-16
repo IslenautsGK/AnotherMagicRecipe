@@ -12,6 +12,7 @@ import com.anotherera.magicrecipe.client.gui.GuiCrafting;
 import com.anotherera.magicrecipe.common.api.ARecipeHandler;
 import com.anotherera.magicrecipe.common.inventory.ContainerWorkbench;
 import com.anotherera.magicrecipe.common.inventory.InventoryCrafting;
+import com.anotherera.magicrecipe.common.item.OreDictItem;
 import com.anotherera.magicrecipe.common.network.packet.MinecraftRecipeChangePacket;
 import com.anotherera.magicrecipe.common.util.ItemStackUtil;
 
@@ -22,10 +23,11 @@ import net.minecraft.inventory.Container;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.crafting.CraftingManager;
 import net.minecraft.item.crafting.IRecipe;
-import net.minecraft.item.crafting.ShapedRecipes;
-import net.minecraft.item.crafting.ShapelessRecipes;
+import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.World;
+import net.minecraftforge.oredict.ShapedOreRecipe;
+import net.minecraftforge.oredict.ShapelessOreRecipe;
 
 public class MinecraftRecipeChangeHandler extends ARecipeHandler<MinecraftRecipeChangePacket, IMessage> {
 
@@ -143,12 +145,12 @@ public class MinecraftRecipeChangeHandler extends ARecipeHandler<MinecraftRecipe
 				}
 			}
 			if (haveItem) {
-				IRecipe exRecipe;
 				if (isShaped) {
-					int up = 3, down = -1, left = 3, right = -1;
+					int up = 3, down = -1, left = 3, right = -1, count = 0;
 					for (int i = 0; i < 3; i++) {
 						for (int j = 0; j < 3; j++) {
 							if (inputs[i * 3 + j] != null) {
+								count++;
 								if (up > i) {
 									up = i;
 								}
@@ -166,33 +168,76 @@ public class MinecraftRecipeChangeHandler extends ARecipeHandler<MinecraftRecipe
 					}
 					int w = right - left + 1;
 					int h = down - up + 1;
+					String[] strtags = new String[h];
+					for (int i = 0; i < h; i++) {
+						strtags[i] = "";
+						for (int j = 0; j < w; j++) {
+							strtags[i] += i * w + j;
+						}
+					}
 					ItemStack[] in = new ItemStack[w * h];
 					for (int i = 0; i < h; i++) {
 						for (int j = 0; j < w; j++) {
 							in[i * w + j] = inputs[(i + up) * 3 + (j + left)];
 						}
 					}
-					exRecipe = new ShapedRecipes(w, h, in, output);
-				} else {
-					ArrayList<ItemStack> in = new ArrayList<>();
-					for (ItemStack itemStack : inputs) {
-						if (itemStack != null) {
-							in.add(itemStack);
+					Object[] objs = new Object[strtags.length + count * 2];
+					for (int i = 0; i < strtags.length; i++) {
+						objs[i] = strtags[i];
+					}
+					for (int i = 0, j = 0; i < in.length; i++) {
+						if (in[i] != null) {
+							boolean isOreDict = false;
+							objs[strtags.length + j * 2] = (char) ('0' + i);
+							if (in[i].getItem() instanceof OreDictItem) {
+								if (in[i].hasTagCompound()) {
+									NBTTagCompound nbt = in[i].getTagCompound();
+									if (nbt.hasKey("oreName")) {
+										objs[strtags.length + j * 2 + 1] = nbt.getString("oreName");
+										isOreDict = true;
+									}
+								}
+							}
+							if (!isOreDict) {
+								objs[strtags.length + j * 2 + 1] = in[i];
+							}
+							j++;
 						}
 					}
-					exRecipe = new ShapelessRecipes(output, in);
-				}
-				boolean isRaw = false;
-				if (!isRaw) {
-					Object[] data = new Object[2 + inputs.length];
-					data[0] = Boolean.valueOf(isShaped);
-					data[1] = output;
-					for (int i = 0; i < inputs.length; i++) {
-						data[i + 2] = inputs[i];
+					CraftingManager.getInstance().getRecipeList().add(new ShapedOreRecipe(output, objs));
+					/*
+					 * ItemStack[] in = new ItemStack[w * h]; for (int i = 0; i < h; i++) { for (int
+					 * j = 0; j < w; j++) { in[i * w + j] = inputs[(i + up) * 3 + (j + left)]; } }
+					 * exRecipe = new ShapedRecipes(w, h, in, output);
+					 */
+				} else {
+					ArrayList<Object> in = new ArrayList<>();
+					for (ItemStack itemStack : inputs) {
+						if (itemStack != null) {
+							boolean isOreDict = false;
+							if (itemStack.getItem() instanceof OreDictItem) {
+								if (itemStack.hasTagCompound()) {
+									NBTTagCompound nbt = itemStack.getTagCompound();
+									if (nbt.hasKey("oreName")) {
+										in.add(nbt.getString("oreName"));
+										isOreDict = true;
+									}
+								}
+							}
+							if (!isOreDict) {
+								in.add(itemStack);
+							}
+						}
 					}
-					recipes.add(data);
+					CraftingManager.getInstance().getRecipeList().add(new ShapelessOreRecipe(output, in.toArray()));
 				}
-				CraftingManager.getInstance().getRecipeList().add(exRecipe);
+				Object[] data = new Object[2 + inputs.length];
+				data[0] = Boolean.valueOf(isShaped);
+				data[1] = output;
+				for (int i = 0; i < inputs.length; i++) {
+					data[i + 2] = inputs[i];
+				}
+				recipes.add(data);
 			}
 		}
 	}

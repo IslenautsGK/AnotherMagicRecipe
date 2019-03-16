@@ -16,8 +16,12 @@ import com.anotherera.magicrecipe.common.recipehandler.RecipeHandlerRegister;
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
 import cpw.mods.fml.common.gameevent.PlayerEvent;
 import net.minecraft.block.Block;
+import net.minecraft.item.ItemStack;
+import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.server.MinecraftServer;
+import net.minecraftforge.event.entity.player.ItemTooltipEvent;
 import net.minecraftforge.event.entity.player.PlayerInteractEvent;
+import net.minecraftforge.oredict.OreDictionary;
 
 public class MasterKeyEvent {
 
@@ -45,20 +49,6 @@ public class MasterKeyEvent {
 				break;
 			}
 		}
-		/*
-		 * if (block == Blocks.crafting_table) {
-		 * event.entityPlayer.openGui(AnotherMagicRecipe.instance,
-		 * GuiElementLoader.WORK_BENCH, event.world, event.x, event.y, event.z);
-		 * event.setCanceled(true); } if (Loader.isModLoaded("Thaumcraft") &&
-		 * isArcaneWorkbench(block, meta)) {
-		 * event.entityPlayer.openGui(AnotherMagicRecipe.instance,
-		 * GuiElementLoader.ARCANE_WORKBENCH, event.world, event.x, event.y, event.z);
-		 * event.setCanceled(true); } if (Loader.isModLoaded("Avaritia") &&
-		 * isAvaritiaWorkbench(block, meta)) {
-		 * event.entityPlayer.openGui(AnotherMagicRecipe.instance,
-		 * GuiElementLoader.AVARITIA_WORKBENCH, event.world, event.x, event.y, event.z);
-		 * event.setCanceled(true); }
-		 */
 	}
 
 	@SubscribeEvent
@@ -79,14 +69,18 @@ public class MasterKeyEvent {
 		}
 	}
 
-	/*
-	 * @Optional.Method(modid = "Thaumcraft") private boolean
-	 * isArcaneWorkbench(Block block, int meta) { return block ==
-	 * ConfigBlocks.blockTable && meta == 15; }
-	 * 
-	 * @Optional.Method(modid = "Avaritia") private boolean
-	 * isAvaritiaWorkbench(Block block, int meta) { return block ==
-	 * LudicrousBlocks.dire_crafting; }
-	 */
+	@SubscribeEvent
+	public void onItemTooltipRender(ItemTooltipEvent event) {
+		if (event.itemStack.getItem() == ItemLoader.oredictitem && event.itemStack.hasTagCompound()) {
+			NBTTagCompound nbt = event.itemStack.getTagCompound();
+			if (nbt.hasKey("oreName")) {
+				List<ItemStack> items = OreDictionary.getOres(nbt.getString("oreName"), false);
+				for (ItemStack item : items) {
+					event.toolTip.add(1, " -" + item.getDisplayName());
+				}
+				event.toolTip.add(1, "example:");
+			}
+		}
+	}
 
 }
