@@ -14,7 +14,6 @@ public class OreDictItem extends Item {
 
 	public OreDictItem() {
 		this.setUnlocalizedName("ore_dict_item");
-		this.setMaxStackSize(1);
 		this.setCreativeTab(CreativeTabsLoader.anotherCreativeTab);
 	}
 

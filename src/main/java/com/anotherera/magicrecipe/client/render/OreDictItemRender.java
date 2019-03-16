@@ -2,7 +2,6 @@ package com.anotherera.magicrecipe.client.render;
 
 import java.util.List;
 
-import org.lwjgl.input.Keyboard;
 import org.lwjgl.opengl.GL11;
 
 import net.minecraft.client.Minecraft;
@@ -22,8 +21,7 @@ public class OreDictItemRender implements IItemRenderer {
 
 	@Override
 	public boolean handleRenderType(ItemStack item, ItemRenderType type) {
-		if (!this.recursive && type == IItemRenderer.ItemRenderType.INVENTORY
-				&& (Keyboard.isKeyDown(Keyboard.KEY_LCONTROL) || Keyboard.isKeyDown(Keyboard.KEY_RCONTROL))) {
+		if (!this.recursive && type == IItemRenderer.ItemRenderType.INVENTORY) {
 			if (item.hasTagCompound()) {
 				NBTTagCompound nbt = item.getTagCompound();
 				if (nbt.hasKey("oreName")) {
