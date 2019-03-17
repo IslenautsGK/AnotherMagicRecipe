@@ -247,10 +247,12 @@ public class AvaritiaRecipeChangeHandler extends ARecipeHandler<AvaritiaRecipeCh
 				for (int i = 0; i < inputs.length; i++) {
 					data[i + 2] = inputs[i];
 				}
-				recipes.add(data);
-				historicalRecord.add(historicalRecordIndex++, new Object[] { true, ir });
+				recipes.add(historicalRecordIndex, data);
+				historicalRecord.add(historicalRecordIndex, new Object[] { true, ir });
+				historicalRecordIndex++;
 				if (historicalRecordIndex < historicalRecord.size()) {
 					for (int i = historicalRecord.size() - 1; i >= historicalRecordIndex; i--) {
+						recipes.remove(i);
 						historicalRecord.remove(i);
 					}
 				}
@@ -270,23 +272,21 @@ public class AvaritiaRecipeChangeHandler extends ARecipeHandler<AvaritiaRecipeCh
 		if (haveItem) {
 			InventoryCrafting inv = new InventoryCrafting(9, 9);
 			inv.stackList = inputs;
-			boolean removed = false;
 			Iterator it = ExtremeCraftingManager.getInstance().getRecipeList().iterator();
 			while (it.hasNext()) {
 				IRecipe ir = (IRecipe) it.next();
 				if (ir.matches(inv, null)) {
 					it.remove();
-					removed = true;
-					historicalRecord.add(historicalRecordIndex++, new Object[] { false, ir });
+					recipes.add(historicalRecordIndex, inputs);
+					historicalRecord.add(historicalRecordIndex, new Object[] { false, ir });
+					historicalRecordIndex++;
 					if (historicalRecordIndex < historicalRecord.size()) {
 						for (int i = historicalRecord.size() - 1; i >= historicalRecordIndex; i--) {
+							recipes.remove(i);
 							historicalRecord.remove(i);
 						}
 					}
 				}
-			}
-			if (removed) {
-				recipes.add(inputs);
 			}
 		}
 	}
