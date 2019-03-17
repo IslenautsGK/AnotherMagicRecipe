@@ -52,7 +52,9 @@ public class MinecraftRecipeChangeHandler extends ARecipeHandler<MinecraftRecipe
 
 	@Override
 	public void save(DataOutputStream dos) throws IOException {
-		for (Object[] objs : recipes) {
+		for (int h = 0; h < historicalRecordIndex; h++) {
+			// for (Object[] objs : recipes) {
+			Object[] objs = recipes.get(h);
 			if (objs[0] instanceof Boolean) {
 				dos.writeBoolean(true);
 				dos.writeBoolean((Boolean) objs[0]);
@@ -81,6 +83,7 @@ public class MinecraftRecipeChangeHandler extends ARecipeHandler<MinecraftRecipe
 				}
 			}
 		}
+
 	}
 
 	@Override

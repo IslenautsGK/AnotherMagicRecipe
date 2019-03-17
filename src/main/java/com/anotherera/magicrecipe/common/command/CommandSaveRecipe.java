@@ -72,6 +72,8 @@ public class CommandSaveRecipe extends CommandBase {
 				rh = RecipeHandlerRegister.getHandler(parms[1]);
 				if (rh != null) {
 					if (rh.undo()) {
+						RecipeHandlerLoader.saveAll();
+						RecipeHandlerLoader.sendAllChange();
 						sender.addChatMessage(new ChatComponentTranslation("commands.amr.rh.undo.success"));
 					} else {
 						throw new WrongUsageException("commands.amr.rh.undo.failed");
@@ -84,6 +86,8 @@ public class CommandSaveRecipe extends CommandBase {
 				rh = RecipeHandlerRegister.getHandler(parms[1]);
 				if (rh != null) {
 					if (rh.redo()) {
+						RecipeHandlerLoader.saveAll();
+						RecipeHandlerLoader.sendAllChange();
 						sender.addChatMessage(new ChatComponentTranslation("commands.amr.rh.redo.success"));
 					} else {
 						throw new WrongUsageException("commands.amr.rh.redo.failed");
