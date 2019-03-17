@@ -23,6 +23,7 @@ public class CommonProxy {
 
 	public void preInit(FMLPreInitializationEvent event) {
 		AnotherMagicRecipe.masterKeyNetwork = NetworkRegistry.INSTANCE.newSimpleChannel(AnotherMagicRecipe.MODID);
+		RecipeHandlerLoader.preInit();
 		CreativeTabsLoader.init();
 		ItemLoader.init();
 		BlockLoader.init();
@@ -36,7 +37,7 @@ public class CommonProxy {
 	}
 
 	public void postInit(FMLPostInitializationEvent event) {
-		RecipeHandlerLoader.postInit();
+		RecipeHandlerLoader.initAll();
 	}
 
 	public void serverStarting(FMLServerStartingEvent event) {

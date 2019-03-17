@@ -13,6 +13,7 @@ import com.anotherera.magicrecipe.common.network.packet.ThaumCraftArcaneRecipeCh
 import cpw.mods.fml.common.Optional;
 import net.minecraft.client.gui.GuiButton;
 import net.minecraft.client.gui.GuiTextField;
+import net.minecraft.client.resources.I18n;
 import net.minecraft.entity.player.InventoryPlayer;
 import thaumcraft.api.aspects.Aspect;
 import thaumcraft.client.lib.UtilsFX;
@@ -41,13 +42,13 @@ public class GuiArcaneWorkbench extends thaumcraft.client.gui.GuiArcaneWorkbench
 	public void initGui() {
 		super.initGui();
 		this.buttonList.add(new GuiButton(0, (this.width - this.xSize) / 2 + 186, (this.height - this.ySize) / 2 + 41,
-				24, 20, "添加"));
+				24, 20, I18n.format("gui.amr.add")));
 		this.buttonList.add(new GuiButton(1, (this.width - this.xSize) / 2 + 186, (this.height - this.ySize) / 2 + 62,
-				24, 20, "删除"));
+				24, 20, I18n.format("gui.amr.del")));
 		this.buttonList.add(new GuiButton(2, (this.width - this.xSize) / 2 + 186, (this.height - this.ySize) / 2 + 83,
-				24, 20, "有序"));
+				24, 20, I18n.format("gui.amr.shaped")));
 		this.buttonList.add(new GuiButton(3, (this.width - this.xSize) / 2 + 150, (this.height - this.ySize) / 2 + 118,
-				60, 20, "选择研究"));
+				60, 20, I18n.format("gui.amr.selectresearch")));
 		GuiTextField[] gtfa = new GuiTextField[6];
 		for (int i = 0; i < 6; i++) {
 			gtfa[i] = new GuiTextField(this.fontRendererObj, (this.width - this.xSize) / 2 + aspectLocs[i][0] - 20,
@@ -113,7 +114,8 @@ public class GuiArcaneWorkbench extends thaumcraft.client.gui.GuiArcaneWorkbench
 			break;
 		case 2:
 			isShaped = !isShaped;
-			((GuiButton) this.buttonList.get(2)).displayString = isShaped ? "有序" : "无序";
+			((GuiButton) this.buttonList.get(2)).displayString = isShaped ? I18n.format("gui.amr.shaped")
+					: I18n.format("gui.amr.shapless");
 			break;
 		case 3:
 			this.mc.displayGuiScreen(new GuiSelectResearch(this));

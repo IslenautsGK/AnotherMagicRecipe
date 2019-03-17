@@ -76,7 +76,11 @@ public class MasterKeyEvent {
 			if (nbt.hasKey("oreName")) {
 				List<ItemStack> items = OreDictionary.getOres(nbt.getString("oreName"), false);
 				for (ItemStack item : items) {
-					event.toolTip.add(1, " -" + item.getDisplayName());
+					ItemStack stack = item.copy();
+					if (stack.getItemDamage() >= 32767 || stack.getItemDamage() < 0) {
+						stack.setItemDamage(0);
+					}
+					event.toolTip.add(1, " -" + stack.getDisplayName());
 				}
 				event.toolTip.add(1, "example:");
 			}

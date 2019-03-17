@@ -5,6 +5,7 @@ import java.util.List;
 
 import net.minecraft.client.gui.GuiButton;
 import net.minecraft.client.gui.GuiScreen;
+import net.minecraft.client.resources.I18n;
 import thaumcraft.api.research.ResearchCategories;
 import thaumcraft.api.research.ResearchCategoryList;
 import thaumcraft.api.research.ResearchItem;
@@ -68,11 +69,11 @@ public class GuiSelectResearch extends GuiScreen {
 					researchs.get(page * pageSize + i).getName()));
 		}
 		this.buttonList.add(new GuiButton(-1, this.width / 2 - 100,
-				pageSize * 20 + (this.height - pageSize * 20) / 2 - 10, 50, 20, "上一页"));
+				pageSize * 20 + (this.height - pageSize * 20) / 2 - 10, 50, 20, I18n.format("gui.amr.prepage")));
 		this.buttonList.add(new GuiButton(-2, this.width / 2 + 50,
-				pageSize * 20 + (this.height - pageSize * 20) / 2 - 10, 50, 20, "下一页"));
+				pageSize * 20 + (this.height - pageSize * 20) / 2 - 10, 50, 20, I18n.format("gui.amr.nextpage")));
 		this.buttonList.add(new GuiButton(-3, this.width / 2 - 40,
-				pageSize * 20 + (this.height - pageSize * 20) / 2 - 10, 80, 20, "返回"));
+				pageSize * 20 + (this.height - pageSize * 20) / 2 - 10, 80, 20, I18n.format("gui.amr.back")));
 	}
 
 }

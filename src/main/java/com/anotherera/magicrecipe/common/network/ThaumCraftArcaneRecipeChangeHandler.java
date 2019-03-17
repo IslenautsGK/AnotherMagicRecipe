@@ -5,8 +5,8 @@ import java.io.DataOutputStream;
 import java.io.EOFException;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
-import java.util.function.Predicate;
 
 import com.anotherera.magicrecipe.client.gui.GuiArcaneWorkbench;
 import com.anotherera.magicrecipe.common.api.ARecipeHandler;
@@ -42,6 +42,8 @@ public class ThaumCraftArcaneRecipeChangeHandler extends ARecipeHandler<ThaumCra
 
 	public static List<Object[]> recipes = new ArrayList<>();
 	private static List raw = new ArrayList();
+	private static List<Object[]> historicalRecord = new ArrayList<>();
+	private int historicalRecordIndex = 0;
 
 	private static IInternalMethodHandler imh = new InternalMethodHandler() {
 
@@ -60,6 +62,9 @@ public class ThaumCraftArcaneRecipeChangeHandler extends ARecipeHandler<ThaumCra
 
 	@Override
 	public void reset() {
+		recipes.clear();
+		historicalRecord.clear();
+		historicalRecordIndex = 0;
 		ThaumcraftApi.getCraftingRecipes().clear();
 		ThaumcraftApi.getCraftingRecipes().addAll(raw);
 	}
@@ -228,6 +233,7 @@ public class ThaumCraftArcaneRecipeChangeHandler extends ARecipeHandler<ThaumCra
 				}
 			}
 			if (haveItem && aspects.size() != 0) {
+				IArcaneRecipe iar;
 				if (isShaped) {
 					int up = 3, down = -1, left = 3, right = -1, count = 0;
 					for (int i = 0; i < 3; i++) {
@@ -287,7 +293,7 @@ public class ThaumCraftArcaneRecipeChangeHandler extends ARecipeHandler<ThaumCra
 							j++;
 						}
 					}
-					ThaumcraftApi.addArcaneCraftingRecipe(research, output, aspects, objs);
+					iar = ThaumcraftApi.addArcaneCraftingRecipe(research, output, aspects, objs);
 				} else {
 					ArrayList<Object> in = new ArrayList<>();
 					for (ItemStack itemStack : inputs) {
@@ -307,7 +313,7 @@ public class ThaumCraftArcaneRecipeChangeHandler extends ARecipeHandler<ThaumCra
 							}
 						}
 					}
-					ThaumcraftApi.addShapelessArcaneCraftingRecipe(research, output, aspects, in.toArray());
+					iar = ThaumcraftApi.addShapelessArcaneCraftingRecipe(research, output, aspects, in.toArray());
 				}
 				Object[] data = new Object[9 + inputs.length];
 				data[0] = Boolean.valueOf(isShaped);
@@ -323,6 +329,12 @@ public class ThaumCraftArcaneRecipeChangeHandler extends ARecipeHandler<ThaumCra
 					data[i + 9] = inputs[i];
 				}
 				recipes.add(data);
+				historicalRecord.add(historicalRecordIndex++, new Object[] { true, iar });
+				if (historicalRecordIndex < historicalRecord.size()) {
+					for (int i = historicalRecord.size() - 1; i >= historicalRecordIndex; i--) {
+						historicalRecord.remove(i);
+					}
+				}
 			}
 		}
 	}
@@ -339,9 +351,25 @@ public class ThaumCraftArcaneRecipeChangeHandler extends ARecipeHandler<ThaumCra
 			}
 		}
 		if (haveItem) {
-			Predicate<Object> filter = recipe -> recipe instanceof IArcaneRecipe
-					&& ((IArcaneRecipe) recipe).matches(tile, null, player);
-			if (ThaumcraftApi.getCraftingRecipes().removeIf(filter)) {
+			boolean removed = false;
+			Iterator it = ThaumcraftApi.getCraftingRecipes().iterator();
+			while (it.hasNext()) {
+				Object obj = it.next();
+				if (obj instanceof IArcaneRecipe) {
+					IArcaneRecipe iar = (IArcaneRecipe) obj;
+					if (iar.matches(tile, null, player)) {
+						it.remove();
+						removed = true;
+						historicalRecord.add(historicalRecordIndex++, new Object[] { false, iar });
+						if (historicalRecordIndex < historicalRecord.size()) {
+							for (int i = historicalRecord.size() - 1; i >= historicalRecordIndex; i--) {
+								historicalRecord.remove(i);
+							}
+						}
+					}
+				}
+			}
+			if (removed) {
 				recipes.add(inputs);
 			}
 		}
@@ -360,6 +388,34 @@ public class ThaumCraftArcaneRecipeChangeHandler extends ARecipeHandler<ThaumCra
 	@Override
 	public Object getContainerElement(EntityPlayer player, World world, int x, int y, int z) {
 		return new ContainerArcaneWorkbench(player.inventory, (TileArcaneWorkbench) world.getTileEntity(x, y, z));
+	}
+
+	@Override
+	public boolean undo() {
+		if (historicalRecordIndex > 0) {
+			Object[] obj = historicalRecord.get(--historicalRecordIndex);
+			if ((Boolean) obj[0]) {
+				ThaumcraftApi.getCraftingRecipes().removeIf(o -> o == obj[1]);
+			} else {
+				ThaumcraftApi.getCraftingRecipes().add(obj[1]);
+			}
+			return true;
+		}
+		return false;
+	}
+
+	@Override
+	public boolean redo() {
+		if (historicalRecordIndex < historicalRecord.size()) {
+			Object[] obj = historicalRecord.get(historicalRecordIndex++);
+			if ((Boolean) obj[0]) {
+				ThaumcraftApi.getCraftingRecipes().add(obj[1]);
+			} else {
+				ThaumcraftApi.getCraftingRecipes().removeIf(o -> o == obj[1]);
+			}
+			return true;
+		}
+		return false;
 	}
 
 }

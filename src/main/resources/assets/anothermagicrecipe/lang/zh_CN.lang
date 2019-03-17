@@ -3,3 +3,23 @@ item.master_key.name=万能钥匙
 item.ore_dict_item.name=矿物字典
 
 itemGroup.another=Another Magic Recipe
+
+gui.amr.add=添加
+gui.amr.del=删除
+gui.amr.shaped=有序
+gui.amr.shapless=无序
+gui.amr.selectresearch=选择研究
+gui.amr.prepage=上一页
+gui.amr.nextpage=下一页
+gui.amr.back=返回
+
+commands.amr.usage=/amr <save|load|reset|reload> | /amr <undo|redo> <name>
+commands.amr.save.success=保存成功
+commands.amr.load.success=加载成功
+commands.amr.reset.success=重置成功
+commands.amr.reload.success=重载成功
+commands.amr.rh.notfound=未找到 %s
+commands.amr.rh.undo.success=撤消成功
+commands.amr.rh.undo.failed=撤消失败
+commands.amr.rh.redo.success=重做成功
+commands.amr.rh.redo.failed=重做失败

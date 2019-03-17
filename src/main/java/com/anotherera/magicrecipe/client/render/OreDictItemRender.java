@@ -54,6 +54,10 @@ public class OreDictItemRender implements IItemRenderer {
 		NBTTagCompound nbt = item.getTagCompound();
 		List<ItemStack> items = OreDictionary.getOres(nbt.getString("oreName"), false);
 		ItemStack ore = items.get(index % items.size());
+		if (ore.getItemDamage() >= 32767 || ore.getItemDamage() < 0) {
+			ore = ore.copy();
+			ore.setItemDamage(0);
+		}
 		Minecraft mc = Minecraft.getMinecraft();
 		GL11.glPushAttrib(24576);
 		RenderHelper.enableGUIStandardItemLighting();

@@ -5,8 +5,8 @@ import java.io.DataOutputStream;
 import java.io.EOFException;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
-import java.util.function.Predicate;
 
 import com.anotherera.magicrecipe.client.gui.GuiCrafting;
 import com.anotherera.magicrecipe.common.api.ARecipeHandler;
@@ -24,7 +24,6 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.item.crafting.CraftingManager;
 import net.minecraft.item.crafting.IRecipe;
 import net.minecraft.nbt.NBTTagCompound;
-import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.World;
 import net.minecraftforge.oredict.ShapedOreRecipe;
 import net.minecraftforge.oredict.ShapelessOreRecipe;
@@ -33,6 +32,8 @@ public class MinecraftRecipeChangeHandler extends ARecipeHandler<MinecraftRecipe
 
 	public static List<Object[]> recipes = new ArrayList<>();
 	private static List raw = new ArrayList();
+	private static List<Object[]> historicalRecord = new ArrayList<>();
+	private int historicalRecordIndex = 0;
 
 	@Override
 	public void init() {
@@ -42,6 +43,9 @@ public class MinecraftRecipeChangeHandler extends ARecipeHandler<MinecraftRecipe
 
 	@Override
 	public void reset() {
+		recipes.clear();
+		historicalRecord.clear();
+		historicalRecordIndex = 0;
 		CraftingManager.getInstance().getRecipeList().clear();
 		CraftingManager.getInstance().getRecipeList().addAll(raw);
 	}
@@ -93,7 +97,7 @@ public class MinecraftRecipeChangeHandler extends ARecipeHandler<MinecraftRecipe
 							inputs[i] = ItemStackUtil.loadItemStack(dis);
 						}
 					}
-					addRecipe(isShaped, MinecraftServer.getServer().getEntityWorld(), output, inputs);
+					addRecipe(isShaped, output, inputs);
 				} else {
 					String tag = dis.readUTF();
 					ItemStack[] inputs = new ItemStack[tag.length()];
@@ -102,7 +106,7 @@ public class MinecraftRecipeChangeHandler extends ARecipeHandler<MinecraftRecipe
 							inputs[i] = ItemStackUtil.loadItemStack(dis);
 						}
 					}
-					delRecipe(MinecraftServer.getServer().getEntityWorld(), inputs);
+					delRecipe(inputs);
 				}
 			}
 		} catch (EOFException e) {
@@ -119,21 +123,20 @@ public class MinecraftRecipeChangeHandler extends ARecipeHandler<MinecraftRecipe
 				for (int i = 0; i < 9; i++) {
 					inputs[i] = wb.craftMatrix.getStackInSlot(i);
 				}
-				addRecipe(message.isShaped, ctx.getServerHandler().playerEntity.worldObj,
-						wb.craftResult.getStackInSlot(0), inputs);
+				addRecipe(message.isShaped, wb.craftResult.getStackInSlot(0), inputs);
 			} else {
 				ItemStack[] inputs = new ItemStack[9];
 				for (int i = 0; i < 9; i++) {
 					inputs[i] = wb.craftMatrix.getStackInSlot(i);
 				}
-				delRecipe(ctx.getServerHandler().playerEntity.worldObj, inputs);
+				delRecipe(inputs);
 			}
 			wb.onCraftMatrixChanged(null);
 		}
 		return null;
 	}
 
-	private void addRecipe(boolean isShaped, World world, ItemStack output, ItemStack[] inputs) {
+	private void addRecipe(boolean isShaped, ItemStack output, ItemStack[] inputs) {
 		if (output != null) {
 			output = output.copy();
 			boolean haveItem = false;
@@ -145,6 +148,7 @@ public class MinecraftRecipeChangeHandler extends ARecipeHandler<MinecraftRecipe
 				}
 			}
 			if (haveItem) {
+				IRecipe ir;
 				if (isShaped) {
 					int up = 3, down = -1, left = 3, right = -1, count = 0;
 					for (int i = 0; i < 3; i++) {
@@ -204,7 +208,8 @@ public class MinecraftRecipeChangeHandler extends ARecipeHandler<MinecraftRecipe
 							j++;
 						}
 					}
-					CraftingManager.getInstance().getRecipeList().add(new ShapedOreRecipe(output, objs));
+					ir = new ShapedOreRecipe(output, objs);
+					CraftingManager.getInstance().getRecipeList().add(ir);
 					/*
 					 * ItemStack[] in = new ItemStack[w * h]; for (int i = 0; i < h; i++) { for (int
 					 * j = 0; j < w; j++) { in[i * w + j] = inputs[(i + up) * 3 + (j + left)]; } }
@@ -229,7 +234,8 @@ public class MinecraftRecipeChangeHandler extends ARecipeHandler<MinecraftRecipe
 							}
 						}
 					}
-					CraftingManager.getInstance().getRecipeList().add(new ShapelessOreRecipe(output, in.toArray()));
+					ir = new ShapelessOreRecipe(output, in.toArray());
+					CraftingManager.getInstance().getRecipeList().add(ir);
 				}
 				Object[] data = new Object[2 + inputs.length];
 				data[0] = Boolean.valueOf(isShaped);
@@ -238,11 +244,17 @@ public class MinecraftRecipeChangeHandler extends ARecipeHandler<MinecraftRecipe
 					data[i + 2] = inputs[i];
 				}
 				recipes.add(data);
+				historicalRecord.add(historicalRecordIndex++, new Object[] { true, ir });
+				if (historicalRecordIndex < historicalRecord.size()) {
+					for (int i = historicalRecord.size() - 1; i >= historicalRecordIndex; i--) {
+						historicalRecord.remove(i);
+					}
+				}
 			}
 		}
 	}
 
-	private void delRecipe(World world, ItemStack[] inputs) {
+	private void delRecipe(ItemStack[] inputs) {
 		boolean haveItem = false;
 		for (int i = 0; i < 9; i++) {
 			if (inputs[i] != null) {
@@ -254,8 +266,22 @@ public class MinecraftRecipeChangeHandler extends ARecipeHandler<MinecraftRecipe
 		if (haveItem) {
 			InventoryCrafting inv = new InventoryCrafting(3, 3);
 			inv.stackList = inputs;
-			Predicate<IRecipe> filter = recipe -> recipe.matches(inv, world);
-			if (CraftingManager.getInstance().getRecipeList().removeIf(filter)) {
+			boolean removed = false;
+			Iterator it = CraftingManager.getInstance().getRecipeList().iterator();
+			while (it.hasNext()) {
+				IRecipe ir = (IRecipe) it.next();
+				if (ir.matches(inv, null)) {
+					it.remove();
+					removed = true;
+					historicalRecord.add(historicalRecordIndex++, new Object[] { false, ir });
+					if (historicalRecordIndex < historicalRecord.size()) {
+						for (int i = historicalRecord.size() - 1; i >= historicalRecordIndex; i--) {
+							historicalRecord.remove(i);
+						}
+					}
+				}
+			}
+			if (removed) {
 				recipes.add(inputs);
 			}
 		}
@@ -274,6 +300,34 @@ public class MinecraftRecipeChangeHandler extends ARecipeHandler<MinecraftRecipe
 	@Override
 	public Object getContainerElement(EntityPlayer player, World world, int x, int y, int z) {
 		return new ContainerWorkbench(player.inventory, world, x, y, z);
+	}
+
+	@Override
+	public boolean undo() {
+		if (historicalRecordIndex > 0) {
+			Object[] obj = historicalRecord.get(--historicalRecordIndex);
+			if ((Boolean) obj[0]) {
+				CraftingManager.getInstance().getRecipeList().removeIf(o -> o == obj[1]);
+			} else {
+				CraftingManager.getInstance().getRecipeList().add(obj[1]);
+			}
+			return true;
+		}
+		return false;
+	}
+
+	@Override
+	public boolean redo() {
+		if (historicalRecordIndex < historicalRecord.size()) {
+			Object[] obj = historicalRecord.get(historicalRecordIndex++);
+			if ((Boolean) obj[0]) {
+				CraftingManager.getInstance().getRecipeList().add(obj[1]);
+			} else {
+				CraftingManager.getInstance().getRecipeList().removeIf(o -> o == obj[1]);
+			}
+			return true;
+		}
+		return false;
 	}
 
 }

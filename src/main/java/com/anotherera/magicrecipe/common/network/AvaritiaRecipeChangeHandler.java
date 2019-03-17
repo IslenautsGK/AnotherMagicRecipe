@@ -5,8 +5,8 @@ import java.io.DataOutputStream;
 import java.io.EOFException;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
-import java.util.function.Predicate;
 
 import com.anotherera.magicrecipe.client.gui.GuiExtremeCrafting;
 import com.anotherera.magicrecipe.common.api.ARecipeHandler;
@@ -34,6 +34,8 @@ public class AvaritiaRecipeChangeHandler extends ARecipeHandler<AvaritiaRecipeCh
 
 	public static List<Object[]> recipes = new ArrayList<>();
 	private static List raw = new ArrayList();
+	private static List<Object[]> historicalRecord = new ArrayList<>();
+	private int historicalRecordIndex = 0;
 	private static final String craftingTag = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ~!@#$%^&*()-+<>?;:'";
 
 	@Override
@@ -44,6 +46,9 @@ public class AvaritiaRecipeChangeHandler extends ARecipeHandler<AvaritiaRecipeCh
 
 	@Override
 	public void reset() {
+		recipes.clear();
+		historicalRecord.clear();
+		historicalRecordIndex = 0;
 		ExtremeCraftingManager.getInstance().getRecipeList().clear();
 		ExtremeCraftingManager.getInstance().getRecipeList().addAll(raw);
 	}
@@ -104,7 +109,7 @@ public class AvaritiaRecipeChangeHandler extends ARecipeHandler<AvaritiaRecipeCh
 							inputs[i] = ItemStackUtil.loadItemStack(dis);
 						}
 					}
-					delRecipe(MinecraftServer.getServer().getEntityWorld(), inputs);
+					delRecipe(inputs);
 				}
 			}
 		} catch (EOFException e) {
@@ -128,7 +133,7 @@ public class AvaritiaRecipeChangeHandler extends ARecipeHandler<AvaritiaRecipeCh
 				for (int i = 0; i < 81; i++) {
 					inputs[i] = wb.craftMatrix.getStackInSlot(i);
 				}
-				delRecipe(ctx.getServerHandler().playerEntity.worldObj, inputs);
+				delRecipe(inputs);
 			}
 			wb.onCraftMatrixChanged(null);
 		}
@@ -147,6 +152,7 @@ public class AvaritiaRecipeChangeHandler extends ARecipeHandler<AvaritiaRecipeCh
 				}
 			}
 			if (haveItem) {
+				IRecipe ir;
 				if (isShaped) {
 					int up = 9, down = -1, left = 9, right = -1, count = 0;
 					for (int i = 0; i < 9; i++) {
@@ -207,7 +213,7 @@ public class AvaritiaRecipeChangeHandler extends ARecipeHandler<AvaritiaRecipeCh
 							j++;
 						}
 					}
-					ExtremeCraftingManager.getInstance().addExtremeShapedOreRecipe(output, objs);
+					ir = ExtremeCraftingManager.getInstance().addExtremeShapedOreRecipe(output, objs);
 					/*
 					 * ItemStack[] in = new ItemStack[w * h]; for (int i = 0; i < h; i++) { for (int
 					 * j = 0; j < w; j++) { in[i * w + j] = inputs[(i + up) * 9 + (j + left)]; } }
@@ -231,7 +237,7 @@ public class AvaritiaRecipeChangeHandler extends ARecipeHandler<AvaritiaRecipeCh
 							}
 						}
 					}
-					ExtremeCraftingManager.getInstance().addShapelessOreRecipe(output, in.toArray());
+					ir = ExtremeCraftingManager.getInstance().addShapelessOreRecipe(output, in.toArray());
 				}
 				Object[] data = new Object[2 + inputs.length];
 				data[0] = Boolean.valueOf(isShaped);
@@ -240,11 +246,17 @@ public class AvaritiaRecipeChangeHandler extends ARecipeHandler<AvaritiaRecipeCh
 					data[i + 2] = inputs[i];
 				}
 				recipes.add(data);
+				historicalRecord.add(historicalRecordIndex++, new Object[] { true, ir });
+				if (historicalRecordIndex < historicalRecord.size()) {
+					for (int i = historicalRecord.size() - 1; i >= historicalRecordIndex; i--) {
+						historicalRecord.remove(i);
+					}
+				}
 			}
 		}
 	}
 
-	private void delRecipe(World world, ItemStack[] inputs) {
+	private void delRecipe(ItemStack[] inputs) {
 		boolean haveItem = false;
 		for (int i = 0; i < 81; i++) {
 			if (inputs[i] != null) {
@@ -256,8 +268,22 @@ public class AvaritiaRecipeChangeHandler extends ARecipeHandler<AvaritiaRecipeCh
 		if (haveItem) {
 			InventoryCrafting inv = new InventoryCrafting(9, 9);
 			inv.stackList = inputs;
-			Predicate<IRecipe> filter = recipe -> recipe.matches(inv, world);
-			if (ExtremeCraftingManager.getInstance().getRecipeList().removeIf(filter)) {
+			boolean removed = false;
+			Iterator it = ExtremeCraftingManager.getInstance().getRecipeList().iterator();
+			while (it.hasNext()) {
+				IRecipe ir = (IRecipe) it.next();
+				if (ir.matches(inv, null)) {
+					it.remove();
+					removed = true;
+					historicalRecord.add(historicalRecordIndex++, new Object[] { false, ir });
+					if (historicalRecordIndex < historicalRecord.size()) {
+						for (int i = historicalRecord.size() - 1; i >= historicalRecordIndex; i--) {
+							historicalRecord.remove(i);
+						}
+					}
+				}
+			}
+			if (removed) {
 				recipes.add(inputs);
 			}
 		}
@@ -278,6 +304,34 @@ public class AvaritiaRecipeChangeHandler extends ARecipeHandler<AvaritiaRecipeCh
 	public Object getContainerElement(EntityPlayer player, World world, int x, int y, int z) {
 		return new ContainerExtremeCrafting(player.inventory, world, x, y, z,
 				(TileEntityDireCrafting) world.getTileEntity(x, y, z));
+	}
+
+	@Override
+	public boolean undo() {
+		if (historicalRecordIndex > 0) {
+			Object[] obj = historicalRecord.get(--historicalRecordIndex);
+			if ((Boolean) obj[0]) {
+				ExtremeCraftingManager.getInstance().getRecipeList().removeIf(o -> o == obj[1]);
+			} else {
+				ExtremeCraftingManager.getInstance().getRecipeList().add(obj[1]);
+			}
+			return true;
+		}
+		return false;
+	}
+
+	@Override
+	public boolean redo() {
+		if (historicalRecordIndex < historicalRecord.size()) {
+			Object[] obj = historicalRecord.get(historicalRecordIndex++);
+			if ((Boolean) obj[0]) {
+				ExtremeCraftingManager.getInstance().getRecipeList().add(obj[1]);
+			} else {
+				ExtremeCraftingManager.getInstance().getRecipeList().removeIf(o -> o == obj[1]);
+			}
+			return true;
+		}
+		return false;
 	}
 
 }

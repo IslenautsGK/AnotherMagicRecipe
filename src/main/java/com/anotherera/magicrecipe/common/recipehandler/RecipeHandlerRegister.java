@@ -19,7 +19,6 @@ public class RecipeHandlerRegister {
 
 	public static <REQ extends IMessage, REPLY extends IMessage> void register(String name,
 			ARecipeHandler<? super REQ, ? extends REPLY> rh, Class<REQ> message) {
-		rh.init();
 		nameToObj.put(name, rh);
 		objToName.put(rh, name);
 		NetworkRegister.regist(rh, message, Side.SERVER);
@@ -30,6 +29,10 @@ public class RecipeHandlerRegister {
 
 	public static ARecipeHandler getHandler(String name) {
 		return nameToObj.get(name);
+	}
+
+	public static String[] getNames() {
+		return nameToObj.keySet().toArray(new String[nameToObj.size()]);
 	}
 
 	public static String getName(ARecipeHandler rh) {

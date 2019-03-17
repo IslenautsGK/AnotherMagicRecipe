@@ -30,7 +30,7 @@ public class RecipeHandlerLoader {
 
 	private static List<ARecipeHandler> rhs = new ArrayList<>();
 
-	public static void postInit() {
+	public static void preInit() {
 		NetworkRegister.regist(new RecipeChangeHandler(), RecipeChangePacket.class, Side.CLIENT);
 		register("MinecraftRecipe", new MinecraftRecipeChangeHandler(), MinecraftRecipeChangePacket.class);
 		if (Loader.isModLoaded("Thaumcraft")) {
@@ -39,6 +39,12 @@ public class RecipeHandlerLoader {
 		}
 		if (Loader.isModLoaded("Avaritia")) {
 			register("AvaritiaRecipe", new AvaritiaRecipeChangeHandler(), AvaritiaRecipeChangePacket.class);
+		}
+	}
+
+	public static void initAll() {
+		for (ARecipeHandler iRecipeHandler : rhs) {
+			iRecipeHandler.init();
 		}
 	}
 
@@ -72,6 +78,30 @@ public class RecipeHandlerLoader {
 				iRecipeHandler.save(dos);
 			} catch (IOException e) {
 				e.printStackTrace();
+			}
+		}
+	}
+
+	public static void resetAll() {
+		for (ARecipeHandler iRecipeHandler : rhs) {
+			iRecipeHandler.reset();
+		}
+	}
+
+	public static void sendAllChange() {
+		File dir = MinecraftServer.getServer() == null ? new File(Minecraft.getMinecraft().mcDataDir, "AnotherData")
+				: MinecraftServer.getServer().getFile("AnotherData");
+		if (!dir.exists()) {
+			dir.mkdirs();
+		}
+		for (ARecipeHandler iRecipeHandler : rhs) {
+			File dataFile = new File(dir, RecipeHandlerRegister.getDataFileName(iRecipeHandler));
+			if (dataFile.exists()) {
+				try (DataInputStream dis = new DataInputStream(new FileInputStream(dataFile))) {
+					iRecipeHandler.sendChange(dis);
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
 			}
 		}
 	}

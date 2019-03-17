@@ -69,7 +69,7 @@ public abstract class ARecipeHandler<REQ extends IMessage, REPLY extends IMessag
 
 	@Override
 	public void receiveChange(byte[] data) throws IOException {
-		reload(new DataInputStream(new ByteArrayInputStream(data)));
+		this.reload(new DataInputStream(new ByteArrayInputStream(data)));
 	}
 
 }

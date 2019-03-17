@@ -8,6 +8,7 @@ import cpw.mods.fml.common.Optional;
 import fox.spiteful.avaritia.gui.GUIExtremeCrafting;
 import fox.spiteful.avaritia.tile.TileEntityDireCrafting;
 import net.minecraft.client.gui.GuiButton;
+import net.minecraft.client.resources.I18n;
 import net.minecraft.entity.player.InventoryPlayer;
 import net.minecraft.world.World;
 
@@ -26,11 +27,11 @@ public class GuiExtremeCrafting extends GUIExtremeCrafting {
 	public void initGui() {
 		super.initGui();
 		this.buttonList.add(new GuiButton(0, (this.width - this.xSize) / 2 + 206, (this.height - this.ySize) / 2 + 52,
-				24, 20, "添加"));
+				24, 20, I18n.format("gui.amr.add")));
 		this.buttonList.add(new GuiButton(1, (this.width - this.xSize) / 2 + 206, (this.height - this.ySize) / 2 + 8,
-				24, 20, "删除"));
+				24, 20, I18n.format("gui.amr.del")));
 		this.buttonList.add(new GuiButton(2, (this.width - this.xSize) / 2 + 206, (this.height - this.ySize) / 2 + 30,
-				24, 20, "有序"));
+				24, 20, I18n.format("gui.amr.shaped")));
 	}
 
 	@Override
@@ -44,7 +45,8 @@ public class GuiExtremeCrafting extends GUIExtremeCrafting {
 			break;
 		case 2:
 			isShaped = !isShaped;
-			((GuiButton) this.buttonList.get(2)).displayString = isShaped ? "有序" : "无序";
+			((GuiButton) this.buttonList.get(2)).displayString = isShaped ? I18n.format("gui.amr.shaped")
+					: I18n.format("gui.amr.shapless");
 			break;
 		}
 	}

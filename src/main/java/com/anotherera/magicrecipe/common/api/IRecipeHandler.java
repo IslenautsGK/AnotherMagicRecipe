@@ -24,6 +24,10 @@ public interface IRecipeHandler<REQ extends IMessage, REPLY extends IMessage>
 	@SideOnly(Side.CLIENT)
 	void receiveChange(byte[] data) throws IOException;
 
+	boolean undo();
+
+	boolean redo();
+
 	String getBlockClassName();
 
 	Object getGuiElement(EntityPlayer player, World world, int x, int y, int z);
