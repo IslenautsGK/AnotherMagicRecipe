@@ -297,6 +297,11 @@ public class AvaritiaRecipeChangeHandler extends ARecipeHandler<AvaritiaRecipeCh
 	}
 
 	@Override
+	public int getBlockMeta() {
+		return 0;
+	}
+
+	@Override
 	public Object getGuiElement(EntityPlayer player, World world, int x, int y, int z) {
 		return new GuiExtremeCrafting(player.inventory, world, x, y, z,
 				(TileEntityDireCrafting) world.getTileEntity(x, y, z));

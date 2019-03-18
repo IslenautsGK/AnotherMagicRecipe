@@ -296,6 +296,11 @@ public class MinecraftRecipeChangeHandler extends ARecipeHandler<MinecraftRecipe
 	}
 
 	@Override
+	public int getBlockMeta() {
+		return 0;
+	}
+
+	@Override
 	public Object getGuiElement(EntityPlayer player, World world, int x, int y, int z) {
 		return new GuiCrafting(player.inventory, world, x, y, z);
 	}

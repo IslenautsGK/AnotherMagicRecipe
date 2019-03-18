@@ -30,6 +30,8 @@ public interface IRecipeHandler<REQ extends IMessage, REPLY extends IMessage>
 
 	String getBlockClassName();
 
+	int getBlockMeta();
+
 	Object getGuiElement(EntityPlayer player, World world, int x, int y, int z);
 
 	Object getContainerElement(EntityPlayer player, World world, int x, int y, int z);

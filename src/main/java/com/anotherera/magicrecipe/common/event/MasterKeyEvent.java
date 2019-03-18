@@ -41,7 +41,7 @@ public class MasterKeyEvent {
 		Block block = event.world.getBlock(event.x, event.y, event.z);
 		int meta = event.world.getBlockMetadata(event.x, event.y, event.z);
 		for (ARecipeHandler element : elements) {
-			if (block.getClass().getName().equals(element.getBlockClassName())
+			if (block.getClass().getName().equals(element.getBlockClassName()) && meta == element.getBlockMeta()
 					&& GuiElementLoader.getId(element) != -1) {
 				event.entityPlayer.openGui(AnotherMagicRecipe.instance, GuiElementLoader.getId(element), event.world,
 						event.x, event.y, event.z);

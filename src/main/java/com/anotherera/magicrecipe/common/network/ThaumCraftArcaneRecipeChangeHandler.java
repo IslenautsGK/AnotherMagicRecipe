@@ -383,6 +383,11 @@ public class ThaumCraftArcaneRecipeChangeHandler extends ARecipeHandler<ThaumCra
 	}
 
 	@Override
+	public int getBlockMeta() {
+		return 15;
+	}
+
+	@Override
 	public Object getGuiElement(EntityPlayer player, World world, int x, int y, int z) {
 		return new GuiArcaneWorkbench(player.inventory, (TileArcaneWorkbench) world.getTileEntity(x, y, z));
 	}
